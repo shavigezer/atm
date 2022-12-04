@@ -1,21 +1,20 @@
 import { DB } from './db.js'
 
-export function withdrawal(req, res) {
-    // const {amount} = req.params;
-    let amount = 806.41;
-    let current = amount;
+export function withdrawal(req, res, next) {
+  const {amount} = req.body;
+  let current = amount;
 
   let billsArr = []
   let coinsArr = []
 
+  // todo: order by bills first and by amount 
   const moneyUnits = DB.filter(u => u.amount > 0);
-  // order by
 
   for (let index = 0; index < moneyUnits.length; index++) {
     const mu = moneyUnits[index];
     const val = mu.value;
     const fit = Math.floor(current / val);
-    // 
+    
     if(fit > 0){
       let possible = Math.min(fit, mu.amount);
 
@@ -25,22 +24,22 @@ export function withdrawal(req, res) {
         coinsArr.push({[val]: possible});
       }
       
-    //   console.log(parseFloat(amount - (val * possible)));
-      current -= (val * possible);
-      // todo: update db data => subtract fit from moneyUnits[i].amount
+      current = parseFloat((current - (val * possible)).toFixed(2));
+      // todo: update db data => subtract fit from mu.amount
     }
   }
 
   if(current > 0){
-    res.status(409).send({ "max amount available for withdrawal:": amount - current });
+    res.status(409).send({ "max amount available for withdrawal:": (amount - current).toFixed(2) });
+    next();
   }
 
   if(coinsArr.reduce((sum, curr) => sum + curr.fit, 0) > 50){
-    throw new TooMuchCoinsException;
+    // todo: define expections
+    throw new Error("TooMuchCoinsException");
   }
 
-  return res.status(200).send({ "result": { "bills": billsArr, "coins": coinsArr }})
+  res.status(200).send({ "result": { "bills": billsArr, "coins": coinsArr }})
+  next();
 }
-
-// console.log(withdrawal(837.44));
   
